@@ -107,6 +107,60 @@ flowchart TD
 
 ---
 
+## Forced-Choice Hardening — When You Cannot Use the Preferred Option
+
+When constraints force a less-preferred identity type, the following mandatory guardrails apply. Every forced choice **must** have a documented exception with a named owner, a review date, and a migration plan.
+
+### App Registration with Client Secret (Rank 13)
+
+This is the single most exploited credential type in cloud breaches. If a client secret is the only option, **all** of the following apply:
+
+| Control | Requirement |
+| --- | --- |
+| **Secret lifetime** | Maximum 90 days; enforce via Entra ID App Registration policy. Shorter is better — 30 days if automation supports it |
+| **Rotation automation** | Secrets must be rotated automatically (e.g. Azure DevOps pipeline, Key Vault with event-driven rotation). Manual rotation is not acceptable for production |
+| **Storage** | Store secrets exclusively in Azure Key Vault or an equivalent HSM-backed secret store. Never in code, config files, environment variables on disk, or CI/CD variable stores without encryption at rest |
+| **Least privilege** | Grant only the minimum API permissions required. Prefer delegated permissions over application permissions where possible. Never grant Directory.ReadWrite.All or equivalent broad scopes |
+| **Conditional Access** | Apply Conditional Access for workload identities (requires Workload Identities Premium): restrict by IP/location, detect anomalous sign-in patterns |
+| **Monitoring & alerting** | Enable service principal sign-in logs. Create Sentinel/Log Analytics alerts for: sign-ins from unexpected IPs, failed authentications, permission changes, new secret additions |
+| **Credential hygiene** | Remove unused secrets immediately. Never have more than one active secret per app (except during rotation overlap). Alert on apps with multiple active secrets |
+| **Owner accountability** | Every app registration must have at least two named owners. Ownerless apps must be flagged and remediated within 30 days |
+| **Review cadence** | Quarterly review: is the secret still necessary? Has the blocker to MI/cert/federation been resolved? Update exception documentation |
+| **Network restriction** | Where possible, restrict the service principal to known egress IPs using Conditional Access named locations |
+| **Migration plan** | Document the specific blocker preventing MI or certificate auth, and the conditions under which migration becomes possible. Re-evaluate at each review |
+
+### Standard AD Service Account (Rank 15)
+
+| Control | Requirement |
+| --- | --- |
+| **Password policy** | Minimum 30-character random password, rotated every 90 days via automated process |
+| **Interactive logon** | Deny interactive logon rights (deny log on locally, deny log on through RDP) |
+| **Logon restriction** | Restrict "Log on as a service" / "Log on as a batch job" to only the specific servers that need it |
+| **Tiering** | Never use a Tier 0 service account for Tier 1/2 workloads. Enforce silo/policy assignment |
+| **Monitoring** | MDI alerts for service account anomalies. Audit logon events (4624/4625) and privilege use |
+| **gMSA migration plan** | Document why gMSA is not possible today (app limitation, vendor dependency, non-domain host) and the conditions for migration |
+
+### Cloud-Only User with Password + MFA (Rank 11)
+
+| Control | Requirement |
+| --- | --- |
+| **MFA method** | Require Microsoft Authenticator (number matching + additional context) at minimum. Push-only or SMS is not acceptable |
+| **Password policy** | Enforce banned-password list (custom + global). Minimum 14 characters. No expiry if combined with MFA and leaked-credential detection |
+| **Conditional Access** | Require compliant device or Entra Joined device for sensitive resource access. Block legacy authentication protocols entirely |
+| **Sign-in risk** | Enable Entra ID Protection sign-in and user risk policies. Auto-remediate medium risk; block high risk |
+| **Passwordless migration plan** | Document blocker (no FIDO2 support, shared device, no biometric HW) and timeline for resolution |
+
+### Hybrid Entra Joined Device (Rank 9)
+
+| Control | Requirement |
+| --- | --- |
+| **Co-management** | Enable Intune co-management to begin shifting workloads from GPO to Intune |
+| **Conditional Access** | Require device compliance (not just Hybrid Join) for sensitive resources |
+| **GPO hygiene** | Audit GPOs applied to hybrid devices — remove any that have an Intune equivalent |
+| **Migration plan** | Document the specific GPO/Kerberos/LOB dependency preventing pure Entra Join. Re-evaluate quarterly |
+
+---
+
 ## Universal Protections — Apply to All Identity Types
 
 - **Eliminate legacy authentication protocols** — block NTLM where possible, disable Basic Auth, enforce LDAPS

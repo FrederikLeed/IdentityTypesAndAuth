@@ -106,3 +106,14 @@ flowchart TD
 | Corporate device, no on-prem dependency | Entra Joined |
 | Corporate device, can't remove GPO/Kerberos (legacy LOB, NLA) | Hybrid Entra Joined (document exception) |
 | Personal / BYOD device | Entra Registered |
+
+## Forced-choice hardening
+
+When the decision tree leads to a red or orange node, these mandatory guardrails apply. See the full guidance in [Entra-AD-Identity-Types-and-Authentication.md](Entra-AD-Identity-Types-and-Authentication.md#forced-choice-hardening--when-you-cannot-use-the-preferred-option).
+
+| Forced choice | Key mandatory controls |
+| --- | --- |
+| **App Reg + Client Secret** | Max 90-day secret lifetime, automated rotation, Key Vault storage only, Conditional Access for workload identities, least-privilege permissions, quarterly review, named owners, migration plan |
+| **Standard AD Service Account** | 30+ char random password, deny interactive logon, restrict logon-as-a-service to specific hosts, MDI monitoring, gMSA migration plan |
+| **Cloud-only User + Password + MFA** | Authenticator with number matching (no SMS), 14+ char password, banned-password list, require compliant device, sign-in risk policies, passwordless migration plan |
+| **Hybrid Entra Joined Device** | Enable Intune co-management, require device compliance (not just join), audit GPOs for Intune equivalents, quarterly migration review |
