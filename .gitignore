@@ -1,0 +1,9 @@
+# Build outputs
+release/
+
+# Generated reference template (uncomment if you want to track it in git)
+# reference.docx
+
+# Python
+__pycache__/
+*.pyc
