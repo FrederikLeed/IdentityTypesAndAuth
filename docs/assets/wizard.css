@@ -1,0 +1,301 @@
+/* Identity-selection wizard */
+
+#wizard {
+    margin: 1.5rem 0 2rem;
+}
+
+.wiz-card {
+    border-radius: 8px;
+    padding: 1.5rem;
+    background: var(--md-default-bg-color, #fff);
+    border: 1px solid var(--md-default-fg-color--lightest, #e0e0e0);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+[data-md-color-scheme="slate"] .wiz-card {
+    background: var(--md-default-bg-color);
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.wiz-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    font-size: 0.85rem;
+}
+
+.wiz-step {
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+    color: var(--md-default-fg-color--light, #666);
+}
+
+.wiz-link {
+    background: none;
+    border: none;
+    color: var(--md-primary-fg-color, #3f51b5);
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-family: inherit;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+}
+
+.wiz-link:hover {
+    background: var(--md-default-fg-color--lightest, #f0f0f0);
+}
+
+.wiz-q {
+    font-size: 1.4rem;
+    margin: 0 0 0.5rem;
+    color: var(--md-default-fg-color);
+    line-height: 1.3;
+}
+
+.wiz-hint {
+    color: var(--md-default-fg-color--light, #666);
+    font-size: 0.9rem;
+    margin: 0 0 1.25rem;
+    font-style: italic;
+}
+
+.wiz-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.wiz-option {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    border: 1px solid var(--md-default-fg-color--lightest, #e0e0e0);
+    border-radius: 6px;
+    background: var(--md-default-bg-color, #fff);
+    cursor: pointer;
+    text-align: left;
+    font-family: inherit;
+    font-size: 1rem;
+    transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
+}
+
+.wiz-option:hover {
+    border-color: var(--md-primary-fg-color, #3f51b5);
+    transform: translateX(2px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+[data-md-color-scheme="slate"] .wiz-option {
+    background: rgba(255, 255, 255, 0.03);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-md-color-scheme="slate"] .wiz-option:hover {
+    border-color: var(--md-accent-fg-color);
+}
+
+.wiz-option-label {
+    flex: 1 1 auto;
+    font-weight: 500;
+    color: var(--md-default-fg-color);
+}
+
+.wiz-option-desc {
+    flex: 0 1 auto;
+    color: var(--md-default-fg-color--light, #666);
+    font-size: 0.85rem;
+    margin-left: auto;
+    text-align: right;
+    max-width: 50%;
+}
+
+.wiz-arrow {
+    color: var(--md-primary-fg-color, #3f51b5);
+    font-weight: 600;
+    font-size: 1.2rem;
+    margin-left: 0.5rem;
+}
+
+/* Result card */
+
+.wiz-result {
+    border-left-width: 4px;
+    border-left-style: solid;
+}
+
+.wiz-level-best { border-left-color: #1a7a1a; }
+.wiz-level-good { border-left-color: #2d8a2d; }
+.wiz-level-ok { border-left-color: #b8860b; }
+.wiz-level-transition { border-left-color: #cc8800; }
+.wiz-level-avoid { border-left-color: #cc3333; }
+.wiz-level-neutral { border-left-color: #336699; }
+
+.wiz-title-row {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.wiz-identity {
+    font-size: 1.5rem;
+    margin: 0;
+    color: var(--md-default-fg-color);
+    flex: 1 1 auto;
+}
+
+.wiz-rank {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--md-default-fg-color--light, #666);
+    background: var(--md-default-fg-color--lightest, #f0f0f0);
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.wiz-forced {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+    margin: 0.75rem 0 1rem;
+    padding: 0.6rem 0.85rem;
+    background: rgba(204, 51, 51, 0.08);
+    border-radius: 4px;
+    border-left: 3px solid #cc3333;
+}
+
+.wiz-level-transition .wiz-forced {
+    background: rgba(204, 136, 0, 0.08);
+    border-left-color: #cc8800;
+}
+
+.wiz-forced-tag {
+    background: #cc3333;
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.2rem 0.5rem;
+    border-radius: 3px;
+    letter-spacing: 0.05em;
+}
+
+.wiz-level-transition .wiz-forced-tag {
+    background: #cc8800;
+}
+
+.wiz-forced-reason {
+    font-size: 0.9rem;
+    color: var(--md-default-fg-color);
+}
+
+.wiz-summary {
+    margin: 0.75rem 0;
+    color: var(--md-default-fg-color);
+    line-height: 1.6;
+}
+
+.wiz-section {
+    font-size: 1rem;
+    margin: 1.25rem 0 0.5rem;
+    color: var(--md-default-fg-color);
+}
+
+.wiz-hardening {
+    margin: 0.5rem 0 0.75rem;
+    padding-left: 1.25rem;
+}
+
+.wiz-hardening li {
+    margin: 0.3rem 0;
+    color: var(--md-default-fg-color);
+}
+
+.wiz-link-row {
+    margin: 0.5rem 0 0;
+}
+
+.wiz-ref {
+    font-size: 0.9rem;
+    color: var(--md-primary-fg-color, #3f51b5);
+}
+
+.wiz-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--md-default-fg-color--lightest, #eee);
+}
+
+.wiz-primary,
+.wiz-secondary,
+.wiz-tertiary {
+    padding: 0.6rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.9rem;
+    border: 1px solid transparent;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.wiz-primary {
+    background: var(--md-primary-fg-color, #3f51b5);
+    color: var(--md-primary-bg-color, #fff);
+    border-color: var(--md-primary-fg-color, #3f51b5);
+}
+
+.wiz-primary:hover {
+    background: var(--md-primary-fg-color--dark, #303f9f);
+    color: var(--md-primary-bg-color, #fff);
+}
+
+.wiz-secondary {
+    background: transparent;
+    color: var(--md-primary-fg-color, #3f51b5);
+    border-color: var(--md-primary-fg-color, #3f51b5);
+}
+
+.wiz-secondary:hover {
+    background: var(--md-primary-fg-color, #3f51b5);
+    color: var(--md-primary-bg-color, #fff);
+}
+
+.wiz-tertiary {
+    background: transparent;
+    color: var(--md-default-fg-color--light, #666);
+    border-color: transparent;
+    margin-left: auto;
+}
+
+.wiz-tertiary:hover {
+    background: var(--md-default-fg-color--lightest, #f0f0f0);
+}
+
+@media (max-width: 600px) {
+    .wiz-card {
+        padding: 1.1rem;
+    }
+    .wiz-option {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .wiz-option-desc {
+        max-width: 100%;
+        text-align: left;
+        margin-left: 0;
+    }
+    .wiz-arrow {
+        align-self: flex-end;
+        margin-top: -1.5rem;
+    }
+}
