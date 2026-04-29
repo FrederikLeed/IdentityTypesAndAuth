@@ -7,41 +7,51 @@ status: active
 
 # Identity Types & Authentication
 
-Internal IT-security reference covering identity types and authentication mechanisms across Microsoft Entra ID and on-premises Active Directory. The repo holds the source-of-truth markdown, the decision tree (Mermaid), and a build script that produces DOCX releases.
+Bilingual (English / Danish) reference for choosing identity types and authentication mechanisms across Microsoft Entra ID and on-premises Active Directory. Aimed at IT-security teams making identity-design decisions.
 
-## What it is
+## Outputs
 
-A bilingual (English/Danish) guide for IT-security teams choosing the right identity type for any new workload, human, or device. It ranks 15 identity types from most to least preferred, gives a flowchart for routine decisions, and — crucially — defines mandatory hardening controls for the four "forced-choice" cases where the preferred option is impossible (client secret app reg, standard AD SA, password + MFA cloud user, hybrid Entra Joined device).
+Three formats from one source:
 
-## Audience
+- **Web site** — <https://frederikleed.github.io/IdentityTypesAndAuth/> — MkDocs Material, EN + DA, searchable, mermaid renders live
+- **Full PDF** — `release/identity-types(.da).pdf` — full reference with per-category sub-trees inline (no unified tree — too dense for print)
+- **One-page handout** — `release/identity-types-handout(.da).pdf` — lookup table + forced-choice controls; printable for operators
 
-IT security team. Technical reviewers, architects, and operators making identity-design decisions.
+CI builds the site on every push to main, builds PDFs on every release tag.
+
+## What's covered
+
+15 identity types ranked by security posture:
+
+- Managed Identity (system / user-assigned)
+- Workload Identity Federation
+- Cloud-only / Hybrid users (passwordless or password+MFA)
+- gMSA / dMSA / sMSA / Standard AD service accounts
+- App Registrations (cert / secret / federated)
+- Entra Joined / Hybrid Joined / Registered devices
+- Guest / B2B / B2C identities
+
+Each type gets: auth mechanisms, resource access, validation/protection guidance, pros, cons.
+
+Plus mandatory hardening tables for the four forced-choice cases (App Reg + Client Secret, Standard AD SA, Cloud-only user with password+MFA, Hybrid Entra Joined Device).
+
+## Architecture decisions
+
+- **Source format:** Markdown in `docs/` with `.md` (EN) and `.da.md` (DA) sibling pairs — lets MkDocs i18n suffix mode handle language switching cleanly.
+- **Diagrams:** Mermaid is editable source. PNG renders are committed for the PDF pipeline (which doesn't pre-process mermaid). Sub-trees are split into Workload / Human / Device — the unified tree is too dense for print but works on the web where users can zoom.
+- **PDF engine:** weasyprint (HTML/CSS), not LaTeX. Easier styling, no TeX dependency, better table rendering. Custom CSS in `build/pdf.css`.
+- **No DOCX:** Was previously generated; dropped because customers want PDF (final, printable) or web (searchable) — DOCX adds maintenance with no audience benefit.
 
 ## Recent changes
 
-- Decision tree restructured: workload branch now opens with "Where does it run?" (Azure / external / on-prem) instead of forcing on-prem off the Azure decision
-- §5.3 added covering Delegated Managed Service Accounts (dMSA, Server 2025) — was orphaned in the rank table
-- `build-docx.py` now renders mermaid blocks to PNG via `mmdc` and embeds them in DOCX (was previously placeholder-only)
-- Decision tree pre-rendered to PNG and embedded in README
+- Restructured into `docs/` for MkDocs (April 2026)
+- Split decision tree into Workload / Human / Device sub-trees
+- Replaced unified mermaid in main reference with text pointer (sub-trees inline per section)
+- Added `build-pdf.py` (replaces `build-docx.py`)
+- Added GH Actions workflow: site → Pages, PDFs → release artifacts
 
-## How to read it
+## Known gotchas
 
-- **Day-to-day decisions** — open [`identity-decision-tree.md`](identity-decision-tree.md), follow the flowchart
-- **Forced-choice exception design** — go to "Forced-Choice Hardening" in the main reference for the mandatory controls
-- **Per-identity detail** — main reference is organised by category (Human, Workload, Device, On-prem service) with pros, cons, and protection guidance
-
-## Build & deliver
-
-```bash
-python -m venv .venv
-.venv/bin/pip install pypandoc pypandoc_binary
-.venv/bin/python build-docx.py
-```
-
-Output: `release/*.docx`. Requires `mmdc` (mermaid-cli) for diagram rendering — without it, mermaid blocks fall back to placeholders.
-
-## Constraints
-
-- DOCX styling controlled by `reference.docx` (auto-generated on first run, then customise in Word)
-- Mermaid → PNG render needs Chrome via Puppeteer; build script auto-detects `~/.cache/puppeteer/` or honours `PUPPETEER_EXECUTABLE_PATH`
-- Danish translation must be kept in sync with English when content changes
+- MkDocs slugify strips Danish characters (æ → empty, å → a) — internal anchor links to `.da.md` headings must use the stripped form
+- weasyprint binary needs to be on `PATH` at build time (`PATH=".venv/bin:$PATH"`)
+- The `pypandoc_binary` package bundles pandoc — no system pandoc install required

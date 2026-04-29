@@ -1,0 +1,16 @@
+flowchart TD
+    Start([Enhed]) --> DOwn{Virksomhedsejet<br/>eller BYOD?}
+    DOwn -->|BYOD / Personlig| REG[Entra Registered enhed<br/>SVAGESTE tillid]
+    DOwn -->|Virksomhed| DOnPrem{Behøver on-prem AD-<br/>computerkonto?}
+    DOnPrem -->|Nej| EJ[Entra Joined enhed]
+    DOnPrem -->|Ja| Migrate{Kan GPO-/<br/>Kerberos-afhængighed<br/>fjernes?}
+    Migrate -->|Ja — planlæg det| EJ
+    Migrate -->|Nej — legacy LOB,<br/>NLA/RDP,<br/>printer-GPO| HJ[Hybrid Entra Joined enhed<br/>TVUNGET — dokumentér undtagelse]
+
+    classDef good fill:#2d8a2d,stroke:#1a5c1a,color:#fff
+    classDef transition fill:#cc8800,stroke:#8b5e00,color:#fff
+    classDef neutral fill:#336699,stroke:#1a3d5c,color:#fff
+
+    class EJ good
+    class HJ,REG transition
+    class Start neutral

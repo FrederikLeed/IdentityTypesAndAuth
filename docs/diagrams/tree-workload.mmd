@@ -1,0 +1,30 @@
+flowchart TD
+    Start([Workload / Service]) --> WLoc{Where does<br/>it run?}
+
+    WLoc -->|Azure| MIBlock{Resource supports<br/>Managed Identity?}
+    MIBlock -->|Yes| Shared{Shared across<br/>multiple resources?}
+    Shared -->|No| MI_SYS[System-assigned<br/>Managed Identity]
+    Shared -->|Yes| MI_USER[User-assigned<br/>Managed Identity]
+    MIBlock -->|No — legacy SDK,<br/>multi-tenant app,<br/>SAML/OIDC RP| APP_SEC_AZ[App Reg + Client Secret<br/>FORCED — document exception]
+
+    WLoc -->|External / CI-CD<br/>with OIDC provider| WIF[Workload Identity<br/>Federation]
+
+    WLoc -->|External /<br/>no OIDC provider| CertOK{Can store &<br/>rotate a cert?}
+    CertOK -->|Yes| APP_CERT[App Reg + Certificate]
+    CertOK -->|No — embedded device,<br/>SaaS callback| APP_SEC[App Reg + Client Secret<br/>FORCED — document exception]
+
+    WLoc -->|On-prem service| OPDom{Host is<br/>domain-joined?}
+    OPDom -->|Yes| GMSAOK{App supports<br/>gMSA / dMSA?}
+    GMSAOK -->|Yes| GMSA[gMSA / dMSA]
+    GMSAOK -->|No — legacy app,<br/>hardcoded creds| LSA[Standard AD SA<br/>FORCED — plan gMSA migration]
+    OPDom -->|No — Linux host,<br/>workgroup, DMZ| LSA_F[Standard AD SA<br/>FORCED — document exception]
+
+    classDef best fill:#1a7a1a,stroke:#0d4d0d,color:#fff
+    classDef good fill:#2d8a2d,stroke:#1a5c1a,color:#fff
+    classDef avoid fill:#cc3333,stroke:#8b0000,color:#fff
+    classDef neutral fill:#336699,stroke:#1a3d5c,color:#fff
+
+    class MI_SYS,MI_USER best
+    class WIF,GMSA,APP_CERT good
+    class APP_SEC,APP_SEC_AZ,LSA,LSA_F avoid
+    class Start neutral

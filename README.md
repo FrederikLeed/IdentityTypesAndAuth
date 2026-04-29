@@ -1,46 +1,72 @@
 # Identity Types & Authentication — Microsoft Entra ID and Active Directory
 
-Guidance for picking the right identity type and authentication mechanism across Azure, on-premises, and hybrid environments. Ranked by security posture and modern alignment, with mandatory hardening for forced-choice exceptions.
+Source for the bilingual (English / Danish) identity-selection guide. Covers identity types and authentication mechanisms across Microsoft Entra ID and Active Directory, with mandatory hardening for forced-choice exceptions.
 
-**[Decision tree](#decision-tree)** · **[Documents](#documents)** · **[Key principles](#key-principles)** · **[Build DOCX releases](#building-docx-releases)**
+> **Read it on the web:** <https://frederikleed.github.io/IdentityTypesAndAuth/>
+> **Download as PDF:** see the [latest release](https://github.com/FrederikLeed/IdentityTypesAndAuth/releases/latest)
 
-## Decision tree
+## What's published
 
-![Identity decision tree](docs/diagrams/decision-tree.png)
-
-| Colour | Meaning |
-| --- | --- |
-| Dark green | Preferred — zero credentials or strongest posture |
-| Green | Recommended for the scenario |
-| Gold | Acceptable — additional controls required |
-| Orange | Transitional — plan migration away |
-| Red | Forced choice — document exception, plan migration |
-
-Standalone source: [`identity-decision-tree.md`](identity-decision-tree.md) · [`identity-decision-tree.da.md`](identity-decision-tree.da.md)
-
-## Documents
-
-| Document | Language | Description |
+| Format | Audience | Source |
 | --- | --- | --- |
-| [Entra-AD-Identity-Types-and-Authentication.md](Entra-AD-Identity-Types-and-Authentication.md) | English | Full reference — preferred ranking, decision tree, universal protections, detailed sections per identity type |
-| [Entra-AD-Identity-Types-and-Authentication.da.md](Entra-AD-Identity-Types-and-Authentication.da.md) | Dansk | Samme dokument oversat |
-| [identity-decision-tree.md](identity-decision-tree.md) | English | Standalone decision tree — flowchart and quick-reference for identity selection |
-| [identity-decision-tree.da.md](identity-decision-tree.da.md) | Dansk | Beslutningstræ oversat |
+| Web site (EN + DA) | Anyone — searchable, navigable, mermaid renders inline | `docs/` → MkDocs Material → GitHub Pages |
+| Full PDF (EN + DA) | Reference doc for IT-security teams | `docs/index.md` + `docs/full-reference.md` |
+| One-page handout (EN + DA) | Printable lookup card for operators | `docs/index.md` only |
 
-## Key principles
+Built automatically on every push (site) and every release (PDFs) via [`.github/workflows/build.yml`](.github/workflows/build.yml).
 
-- **Prefer managed/secretless identities** — Managed Identity and Workload Identity Federation eliminate credentials entirely
-- **Document exceptions** — when constraints force a less-preferred choice (client secret, standard SA, password + MFA), record why, who owns it, and the migration plan
-- **Plan migration** — forced choices are accepted today, not endorsed forever; review quarterly
+## Repository layout
 
-## Building DOCX releases
+```
+docs/                            # MkDocs source — every page is bilingual via .da.md suffix
+├── index.md                     # Lookup table + key principles + forced-choice summary
+├── decision-tree.md             # Full unified decision tree (web only)
+├── full-reference.md            # Per-type reference with category sub-trees inline
+└── diagrams/
+    ├── decision-tree.{mmd,png}  # Unified tree
+    └── tree-{workload,human,device}.{mmd,png}  # Category sub-trees (PDF + reference)
+
+mkdocs.yml                       # MkDocs Material + i18n (EN/DA suffix mode)
+build-pdf.py                     # Builds 4 PDFs via pandoc + weasyprint
+build/pdf.css                    # Print stylesheet (page setup, table styling, headings)
+.github/workflows/build.yml      # Site → Pages on push; PDFs → release artifacts on tag
+```
+
+## Local development
 
 ```bash
 python -m venv .venv
-.venv/bin/pip install pypandoc pypandoc_binary
-.venv/bin/python build-docx.py
+.venv/bin/pip install mkdocs-material 'mkdocs-static-i18n[material]' weasyprint pypandoc_binary
+
+# Serve site with live reload
+.venv/bin/mkdocs serve
+
+# Build static site to site/
+.venv/bin/mkdocs build --strict
+
+# Build PDFs to release/
+PATH=".venv/bin:$PATH" .venv/bin/python build-pdf.py
 ```
 
-Output goes to `release/`. Mermaid diagrams render to PNG via `mmdc` (install with `npm install -g @mermaid-js/mermaid-cli`); without it, the script falls back to a code-block placeholder.
+## Diagrams
 
-On first run a `reference.docx` template is generated — open in Word to customise styles (fonts, colours, headers), then re-run to apply branding.
+Mermaid is the source of truth for all decision trees. Pre-rendered PNGs live in `docs/diagrams/` for the PDF build (mermaid blocks aren't pre-processed during PDF build — sub-trees referenced as images are fine, the unified tree is only on the web).
+
+Re-render after editing a `.mmd` file:
+
+```bash
+mmdc -p ../docs-toolbox/scripts/puppeteer-config.json \
+  -i docs/diagrams/tree-workload.mmd \
+  -o docs/diagrams/tree-workload.png \
+  -w 1200 --scale 2 -b transparent
+```
+
+## Releasing
+
+Tag and publish a release on GitHub. The workflow attaches all four PDFs to the release as downloads.
+
+```bash
+git tag -a v1.0.0 -m "Initial release"
+git push origin v1.0.0
+gh release create v1.0.0 --generate-notes
+```

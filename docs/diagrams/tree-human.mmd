@@ -1,0 +1,26 @@
+flowchart TD
+    Start([Human]) --> Who{Internal employee,<br/>partner, or customer?}
+    Who -->|Customer / consumer| B2C[B2C / CIAM]
+    Who -->|External partner /<br/>vendor| GUEST[Guest / B2B]
+    Who -->|Internal employee| PWless{Supports passwordless?<br/>FIDO2, WHfB,<br/>Authenticator}
+
+    PWless -->|Yes| OnPremNeed{Needs on-prem<br/>AD resources?}
+    OnPremNeed -->|No| CLOUD[Cloud-only User<br/>+ Passwordless]
+    OnPremNeed -->|Yes| HYBRID[Hybrid User + PHS<br/>+ Passwordless]
+    PWless -->|No — shared kiosk,<br/>factory floor,<br/>no biometric HW| CLOUD_PWD[Cloud-only User<br/>+ Password + MFA<br/>FORCED — document exception]
+
+    CLOUD --> Priv{Holds privileged<br/>roles?}
+    HYBRID --> Priv
+    CLOUD_PWD --> Priv
+    Priv -->|Yes — overlay| PRIV[Dedicated Admin Account<br/>+ PIM + PAW<br/>+ Phishing-resistant MFA]
+    Priv -->|No| Std([Use as-is])
+
+    classDef good fill:#2d8a2d,stroke:#1a5c1a,color:#fff
+    classDef ok fill:#b8860b,stroke:#8b6508,color:#fff
+    classDef transition fill:#cc8800,stroke:#8b5e00,color:#fff
+    classDef neutral fill:#336699,stroke:#1a3d5c,color:#fff
+
+    class CLOUD,PRIV good
+    class HYBRID,GUEST,B2C ok
+    class CLOUD_PWD transition
+    class Start,Std neutral

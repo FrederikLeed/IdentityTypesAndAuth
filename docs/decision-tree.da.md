@@ -1,6 +1,6 @@
 # Beslutningstræ for identitetstyper
 
-![Beslutningstræ for identitet](docs/diagrams/decision-tree.da.png)
+![Beslutningstræ for identitet](diagrams/decision-tree.da.png)
 
 <details><summary>Mermaid-kilde</summary>
 
@@ -108,7 +108,7 @@ flowchart TD
 
 ## Hærdning ved tvungne valg
 
-Når beslutningstræet fører til en rød eller orange node, gælder disse obligatoriske sikkerhedsforanstaltninger. Se den fulde vejledning i [Entra-AD-Identity-Types-and-Authentication.md](Entra-AD-Identity-Types-and-Authentication.md#forced-choice-hardening--when-you-cannot-use-the-preferred-option).
+Når beslutningstræet fører til en rød eller orange node, gælder disse obligatoriske sikkerhedsforanstaltninger. Se den fulde vejledning i [Fuld reference](full-reference.md#hrdning-ved-tvungne-valg-nar-den-foretrukne-mulighed-ikke-kan-anvendes).
 
 | Tvungent valg | Centrale obligatoriske kontroller |
 | --- | --- |

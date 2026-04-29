@@ -29,74 +29,9 @@ Ranked by security posture, operational overhead, and modern alignment — most 
 | 15 | Standard AD Service Account | Nothing new | Legacy anti-pattern; replace immediately |
 | ➕ | B2C / Consumer Identity | Customer-facing apps | Isolated tenant; not applicable to workforce |
 
-### Decision Tree
+### Decision tree
 
-```mermaid
-flowchart TD
-    Start([What needs an identity?]) --> Type{Human, Workload,<br/>or Device?}
-
-    %% ============ WORKLOAD ============
-    Type -->|Workload / Service| WLoc{Where does<br/>it run?}
-
-    WLoc -->|Azure| MIBlock{Resource supports<br/>Managed Identity?}
-    MIBlock -->|Yes| Shared{Shared across<br/>multiple resources?}
-    Shared -->|No| MI_SYS[System-assigned<br/>Managed Identity]
-    Shared -->|Yes| MI_USER[User-assigned<br/>Managed Identity]
-    MIBlock -->|No — legacy SDK,<br/>multi-tenant app,<br/>SAML/OIDC RP| APP_SEC_AZ[App Reg + Client Secret<br/>FORCED — document exception]
-
-    WLoc -->|External / CI-CD<br/>with OIDC provider| WIF[Workload Identity<br/>Federation]
-
-    WLoc -->|External /<br/>no OIDC provider| CertOK{Can store &amp;<br/>rotate a cert?}
-    CertOK -->|Yes| APP_CERT[App Reg + Certificate]
-    CertOK -->|No — embedded device,<br/>SaaS callback,<br/>no cert infra| APP_SEC[App Reg + Client Secret<br/>FORCED — document exception]
-
-    WLoc -->|On-prem service| OPDom{Host is<br/>domain-joined?}
-    OPDom -->|Yes| GMSAOK{App supports<br/>gMSA / dMSA?}
-    GMSAOK -->|Yes| GMSA[gMSA / dMSA]
-    GMSAOK -->|No — legacy app,<br/>hardcoded creds,<br/>third-party agent| LSA[Standard AD SA<br/>FORCED — plan gMSA migration]
-    OPDom -->|No — Linux host,<br/>workgroup, DMZ| LSA_F[Standard AD SA<br/>FORCED — document exception]
-
-    %% ============ HUMAN ============
-    Type -->|Human| Who{Internal employee,<br/>partner, or customer?}
-    Who -->|Customer / consumer| B2C[B2C / CIAM]
-    Who -->|External partner /<br/>vendor| GUEST[Guest / B2B]
-    Who -->|Internal employee| PWless{Supports passwordless?<br/>FIDO2, WHfB,<br/>Authenticator}
-
-    PWless -->|Yes| OnPremNeed{Needs on-prem<br/>AD resources?}
-    OnPremNeed -->|No| CLOUD[Cloud-only User<br/>+ Passwordless]
-    OnPremNeed -->|Yes| HYBRID[Hybrid User + PHS<br/>+ Passwordless]
-    PWless -->|No — shared kiosk,<br/>factory floor,<br/>no biometric HW| CLOUD_PWD[Cloud-only User<br/>+ Password + MFA<br/>FORCED — document exception]
-
-    CLOUD --> Priv{Holds privileged<br/>roles?}
-    HYBRID --> Priv
-    CLOUD_PWD --> Priv
-    Priv -->|Yes — overlay| PRIV[Dedicated Admin Account<br/>+ PIM + PAW<br/>+ Phishing-resistant MFA]
-    Priv -->|No| Std([Use as-is])
-
-    %% ============ DEVICE ============
-    Type -->|Device| DOwn{Corporate-owned<br/>or BYOD?}
-    DOwn -->|BYOD / Personal| REG[Entra Registered Device<br/>WEAKEST trust]
-    DOwn -->|Corporate| DOnPrem{Needs on-prem AD<br/>computer account?}
-    DOnPrem -->|No| EJ[Entra Joined Device]
-    DOnPrem -->|Yes| Migrate{Can remove<br/>GPO / Kerberos<br/>dependency?}
-    Migrate -->|Yes — plan it| EJ
-    Migrate -->|No — legacy LOB,<br/>NLA/RDP,<br/>printer GPO| HJ[Hybrid Entra Joined Device<br/>FORCED — document exception]
-
-    %% ── STYLES ──
-    classDef best fill:#1a7a1a,stroke:#0d4d0d,color:#fff
-    classDef good fill:#2d8a2d,stroke:#1a5c1a,color:#fff
-    classDef ok fill:#b8860b,stroke:#8b6508,color:#fff
-    classDef avoid fill:#cc3333,stroke:#8b0000,color:#fff
-    classDef transition fill:#cc8800,stroke:#8b5e00,color:#fff
-    classDef neutral fill:#336699,stroke:#1a3d5c,color:#fff
-
-    class MI_SYS,MI_USER best
-    class WIF,CLOUD,GMSA,APP_CERT,EJ,PRIV good
-    class HYBRID,GUEST,B2C ok
-    class APP_SEC,APP_SEC_AZ,LSA,LSA_F avoid
-    class HJ,REG,CLOUD_PWD transition
-    class Start,Std neutral
-```
+Per-category sub-trees are embedded at the top of sections [§1 Human](#1-human-identities), [§3 Workload](#3-workload-identities), and [§4 Device](#4-device-identities). The unified tree (all three together) is on the dedicated [Decision tree](decision-tree.md) page.
 
 ---
 
@@ -167,6 +102,8 @@ This is the single most exploited credential type in cloud breaches. If a client
 ---
 
 ## 1. Human Identities
+
+![Human identity decision tree](diagrams/tree-human.png)
 
 ### 1.1 Cloud-Only User Accounts
 
@@ -324,6 +261,8 @@ Same cloud MFA and passwordless methods as cloud-only accounts are available onc
 
 ## 3. Workload Identities
 
+![Workload identity decision tree](diagrams/tree-workload.png)
+
 ### 3.1 Application Registrations
 
 **Description.** An App Registration is the definition of an application in Entra ID — the object through which credentials and API permissions are configured. An App Registration in one tenant can be consented to by other tenants, creating a Service Principal in each.
@@ -425,6 +364,8 @@ Same cloud MFA and passwordless methods as cloud-only accounts are available onc
 ---
 
 ## 4. Device Identities
+
+![Device identity decision tree](diagrams/tree-device.png)
 
 ### 4.1 Microsoft Entra Joined Devices
 

@@ -1,9 +1,7 @@
 # Build outputs
 release/
+site/
 .build-cache/
-
-# Generated reference template (uncomment if you want to track it in git)
-# reference.docx
 
 # Python
 __pycache__/

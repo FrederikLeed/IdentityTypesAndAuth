@@ -1,0 +1,68 @@
+site_name: Identity Types & Authentication
+site_description: Microsoft Entra ID & Active Directory identity selection guide
+site_url: https://frederikleed.github.io/IdentityTypesAndAuth/
+repo_url: https://github.com/FrederikLeed/IdentityTypesAndAuth
+repo_name: FrederikLeed/IdentityTypesAndAuth
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  language: en
+  features:
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.top
+    - navigation.indexes
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - toc.follow
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - tables
+  - toc:
+      permalink: true
+
+plugins:
+  - search
+  - i18n:
+      docs_structure: suffix
+      languages:
+        - locale: en
+          default: true
+          name: English
+          build: true
+        - locale: da
+          name: Dansk
+          build: true
+          nav_translations:
+            Home: Forside
+            Decision tree: Beslutningstræ
+            Full reference: Fuld reference
+
+nav:
+  - Home: index.md
+  - Decision tree: decision-tree.md
+  - Full reference: full-reference.md

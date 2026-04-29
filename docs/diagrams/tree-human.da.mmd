@@ -1,0 +1,26 @@
+flowchart TD
+    Start([Menneske]) --> Who{Intern medarbejder,<br/>partner eller kunde?}
+    Who -->|Kunde / forbruger| B2C[B2C / CIAM]
+    Who -->|Ekstern partner /<br/>leverandør| GUEST[Guest / B2B]
+    Who -->|Intern medarbejder| PWless{Understøtter passwordless?<br/>FIDO2, WHfB,<br/>Authenticator}
+
+    PWless -->|Ja| OnPremNeed{Behøver on-prem<br/>AD-ressourcer?}
+    OnPremNeed -->|Nej| CLOUD[Cloud-only bruger<br/>+ Passwordless]
+    OnPremNeed -->|Ja| HYBRID[Hybridbruger + PHS<br/>+ Passwordless]
+    PWless -->|Nej — delt kiosk,<br/>fabriksgulv,<br/>ingen biometrisk HW| CLOUD_PWD[Cloud-only bruger<br/>+ adgangskode + MFA<br/>TVUNGET — dokumentér undtagelse]
+
+    CLOUD --> Priv{Har privilegerede<br/>roller?}
+    HYBRID --> Priv
+    CLOUD_PWD --> Priv
+    Priv -->|Ja — overlay| PRIV[Dedikeret admin-konto<br/>+ PIM + PAW<br/>+ phishing-resistent MFA]
+    Priv -->|Nej| Std([Brug som den er])
+
+    classDef good fill:#2d8a2d,stroke:#1a5c1a,color:#fff
+    classDef ok fill:#b8860b,stroke:#8b6508,color:#fff
+    classDef transition fill:#cc8800,stroke:#8b5e00,color:#fff
+    classDef neutral fill:#336699,stroke:#1a3d5c,color:#fff
+
+    class CLOUD,PRIV good
+    class HYBRID,GUEST,B2C ok
+    class CLOUD_PWD transition
+    class Start,Std neutral

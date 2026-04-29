@@ -31,72 +31,7 @@ Rangeret efter sikkerhedsniveau, driftsmæssig byrde og moderne tilpasning — f
 
 ### Beslutningstræ
 
-```mermaid
-flowchart TD
-    Start([Hvad har brug for en identitet?]) --> Type{Menneske, workload<br/>eller enhed?}
-
-    %% ============ WORKLOAD ============
-    Type -->|Workload / Tjeneste| WLoc{Hvor kører<br/>den?}
-
-    WLoc -->|Azure| MIBlock{Understøtter ressourcen<br/>Managed Identity?}
-    MIBlock -->|Ja| Shared{Deles på tværs af<br/>flere ressourcer?}
-    Shared -->|Nej| MI_SYS[Systemtildelt<br/>Managed Identity]
-    Shared -->|Ja| MI_USER[Brugertildelt<br/>Managed Identity]
-    MIBlock -->|Nej — legacy SDK,<br/>multi-tenant app,<br/>SAML/OIDC RP| APP_SEC_AZ[App Reg + Client Secret<br/>TVUNGET — dokumentér undtagelse]
-
-    WLoc -->|Ekstern / CI-CD<br/>med OIDC-udbyder| WIF[Workload Identity<br/>Federation]
-
-    WLoc -->|Ekstern /<br/>uden OIDC-udbyder| CertOK{Kan opbevare og<br/>rotere et certifikat?}
-    CertOK -->|Ja| APP_CERT[App Reg + Certifikat]
-    CertOK -->|Nej — embedded enhed,<br/>SaaS-callback,<br/>ingen cert-infra| APP_SEC[App Reg + Client Secret<br/>TVUNGET — dokumentér undtagelse]
-
-    WLoc -->|On-prem tjeneste| OPDom{Er hosten<br/>domænetilsluttet?}
-    OPDom -->|Ja| GMSAOK{App understøtter<br/>gMSA / dMSA?}
-    GMSAOK -->|Ja| GMSA[gMSA / dMSA]
-    GMSAOK -->|Nej — legacy-app,<br/>hardkodede creds,<br/>tredjeparts-agent| LSA[Standard AD SA<br/>TVUNGET — planlæg gMSA-migrering]
-    OPDom -->|Nej — Linux-host,<br/>workgroup, DMZ| LSA_F[Standard AD SA<br/>TVUNGET — dokumentér undtagelse]
-
-    %% ============ MENNESKE ============
-    Type -->|Menneske| Who{Intern medarbejder,<br/>partner eller kunde?}
-    Who -->|Kunde / forbruger| B2C[B2C / CIAM]
-    Who -->|Ekstern partner /<br/>leverandør| GUEST[Guest / B2B]
-    Who -->|Intern medarbejder| PWless{Understøtter passwordless?<br/>FIDO2, WHfB,<br/>Authenticator}
-
-    PWless -->|Ja| OnPremNeed{Behøver on-prem<br/>AD-ressourcer?}
-    OnPremNeed -->|Nej| CLOUD[Cloud-only bruger<br/>+ Passwordless]
-    OnPremNeed -->|Ja| HYBRID[Hybridbruger + PHS<br/>+ Passwordless]
-    PWless -->|Nej — delt kiosk,<br/>fabriksgulv,<br/>ingen biometrisk HW| CLOUD_PWD[Cloud-only bruger<br/>+ adgangskode + MFA<br/>TVUNGET — dokumentér undtagelse]
-
-    CLOUD --> Priv{Har privilegerede<br/>roller?}
-    HYBRID --> Priv
-    CLOUD_PWD --> Priv
-    Priv -->|Ja — overlay| PRIV[Dedikeret admin-konto<br/>+ PIM + PAW<br/>+ phishing-resistent MFA]
-    Priv -->|Nej| Std([Brug som den er])
-
-    %% ============ ENHED ============
-    Type -->|Enhed| DOwn{Virksomhedsejet<br/>eller BYOD?}
-    DOwn -->|BYOD / Personlig| REG[Entra Registered enhed<br/>SVAGESTE tillid]
-    DOwn -->|Virksomhed| DOnPrem{Behøver on-prem AD-<br/>computerkonto?}
-    DOnPrem -->|Nej| EJ[Entra Joined enhed]
-    DOnPrem -->|Ja| Migrate{Kan GPO-/<br/>Kerberos-afhængighed<br/>fjernes?}
-    Migrate -->|Ja — planlæg det| EJ
-    Migrate -->|Nej — legacy LOB,<br/>NLA/RDP,<br/>printer-GPO| HJ[Hybrid Entra Joined enhed<br/>TVUNGET — dokumentér undtagelse]
-
-    %% ── STILARTER ──
-    classDef best fill:#1a7a1a,stroke:#0d4d0d,color:#fff
-    classDef good fill:#2d8a2d,stroke:#1a5c1a,color:#fff
-    classDef ok fill:#b8860b,stroke:#8b6508,color:#fff
-    classDef avoid fill:#cc3333,stroke:#8b0000,color:#fff
-    classDef transition fill:#cc8800,stroke:#8b5e00,color:#fff
-    classDef neutral fill:#336699,stroke:#1a3d5c,color:#fff
-
-    class MI_SYS,MI_USER best
-    class WIF,CLOUD,GMSA,APP_CERT,EJ,PRIV good
-    class HYBRID,GUEST,B2C ok
-    class APP_SEC,APP_SEC_AZ,LSA,LSA_F avoid
-    class HJ,REG,CLOUD_PWD transition
-    class Start,Std neutral
-```
+Per-kategori del-træer er indlejret i toppen af afsnit [§1 Menneske](#1-menneskelige-identiteter), [§3 Workload](#3-workload-identiteter) og [§4 Enhed](#4-enhedsidentiteter). Det forenede træ (alle tre samlet) findes på den dedikerede [Beslutningstræ](decision-tree.md)-side.
 
 ---
 
@@ -167,6 +102,8 @@ Dette er den mest udnyttede legitimationstype ved cloud-brud. Hvis en client sec
 ---
 
 ## 1. Menneskelige identiteter
+
+![Beslutningstræ for menneskelige identiteter](diagrams/tree-human.da.png)
 
 ### 1.1 Cloud-brugerkonti
 
@@ -324,6 +261,8 @@ Samme cloud MFA- og adgangskodeløse metoder som cloud-konti er tilgængelige, n
 
 ## 3. Workload-identiteter
 
+![Beslutningstræ for workload-identiteter](diagrams/tree-workload.da.png)
+
 ### 3.1 Application Registrations
 
 **Beskrivelse.** En App Registration er definitionen af en applikation i Entra ID — objektet, hvorigennem legitimationsoplysninger og API-tilladelser konfigureres. En App Registration i én tenant kan godkendes af andre tenants, hvorved der oprettes en Service Principal i hver.
@@ -425,6 +364,8 @@ Samme cloud MFA- og adgangskodeløse metoder som cloud-konti er tilgængelige, n
 ---
 
 ## 4. Enhedsidentiteter
+
+![Beslutningstræ for enhedsidentiteter](diagrams/tree-device.da.png)
 
 ### 4.1 Microsoft Entra Joined enheder
 

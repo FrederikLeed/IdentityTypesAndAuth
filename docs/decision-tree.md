@@ -1,6 +1,6 @@
 # Identity Type Decision Tree
 
-![Identity decision tree](docs/diagrams/decision-tree.png)
+![Identity decision tree](diagrams/decision-tree.png)
 
 <details><summary>Mermaid source</summary>
 
@@ -108,7 +108,7 @@ flowchart TD
 
 ## Forced-choice hardening
 
-When the decision tree leads to a red or orange node, these mandatory guardrails apply. See the full guidance in [Entra-AD-Identity-Types-and-Authentication.md](Entra-AD-Identity-Types-and-Authentication.md#forced-choice-hardening--when-you-cannot-use-the-preferred-option).
+When the decision tree leads to a red or orange node, these mandatory guardrails apply. See the full guidance in [Full reference](full-reference.md#forced-choice-hardening-when-you-cannot-use-the-preferred-option).
 
 | Forced choice | Key mandatory controls |
 | --- | --- |

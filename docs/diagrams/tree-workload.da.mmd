@@ -1,0 +1,30 @@
+flowchart TD
+    Start([Workload / Tjeneste]) --> WLoc{Hvor kører<br/>den?}
+
+    WLoc -->|Azure| MIBlock{Understøtter ressourcen<br/>Managed Identity?}
+    MIBlock -->|Ja| Shared{Deles på tværs af<br/>flere ressourcer?}
+    Shared -->|Nej| MI_SYS[Systemtildelt<br/>Managed Identity]
+    Shared -->|Ja| MI_USER[Brugertildelt<br/>Managed Identity]
+    MIBlock -->|Nej — legacy SDK,<br/>multi-tenant app,<br/>SAML/OIDC RP| APP_SEC_AZ[App Reg + Client Secret<br/>TVUNGET — dokumentér undtagelse]
+
+    WLoc -->|Ekstern / CI-CD<br/>med OIDC-udbyder| WIF[Workload Identity<br/>Federation]
+
+    WLoc -->|Ekstern /<br/>uden OIDC-udbyder| CertOK{Kan opbevare og<br/>rotere et certifikat?}
+    CertOK -->|Ja| APP_CERT[App Reg + Certifikat]
+    CertOK -->|Nej — embedded enhed,<br/>SaaS-callback| APP_SEC[App Reg + Client Secret<br/>TVUNGET — dokumentér undtagelse]
+
+    WLoc -->|On-prem tjeneste| OPDom{Er hosten<br/>domænetilsluttet?}
+    OPDom -->|Ja| GMSAOK{App understøtter<br/>gMSA / dMSA?}
+    GMSAOK -->|Ja| GMSA[gMSA / dMSA]
+    GMSAOK -->|Nej — legacy-app,<br/>hardkodede creds| LSA[Standard AD SA<br/>TVUNGET — planlæg gMSA-migrering]
+    OPDom -->|Nej — Linux-host,<br/>workgroup, DMZ| LSA_F[Standard AD SA<br/>TVUNGET — dokumentér undtagelse]
+
+    classDef best fill:#1a7a1a,stroke:#0d4d0d,color:#fff
+    classDef good fill:#2d8a2d,stroke:#1a5c1a,color:#fff
+    classDef avoid fill:#cc3333,stroke:#8b0000,color:#fff
+    classDef neutral fill:#336699,stroke:#1a3d5c,color:#fff
+
+    class MI_SYS,MI_USER best
+    class WIF,GMSA,APP_CERT good
+    class APP_SEC,APP_SEC_AZ,LSA,LSA_F avoid
+    class Start neutral
