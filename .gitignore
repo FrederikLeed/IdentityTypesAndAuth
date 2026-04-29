@@ -1,5 +1,6 @@
 # Build outputs
 release/
+.build-cache/
 
 # Generated reference template (uncomment if you want to track it in git)
 # reference.docx
@@ -7,3 +8,4 @@ release/
 # Python
 __pycache__/
 *.pyc
+.venv/

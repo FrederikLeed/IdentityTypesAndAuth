@@ -33,60 +33,54 @@ Ranked by security posture, operational overhead, and modern alignment — most 
 
 ```mermaid
 flowchart TD
-    Start([What needs an identity?]) --> WhoWhat{Human or workload<br/>or device?}
+    Start([What needs an identity?]) --> Type{Human, Workload,<br/>or Device?}
 
-    %% ── WORKLOAD BRANCH ──
-    WhoWhat -->|Workload / Service| Azure{Runs in Azure?}
+    %% ============ WORKLOAD ============
+    Type -->|Workload / Service| WLoc{Where does<br/>it run?}
 
-    Azure -->|Yes| MIBlock{Resource supports<br/>Managed Identity?}
-
-    MIBlock -->|No — e.g. legacy<br/>SDK, multi-tenant<br/>app, SAML/OIDC RP| APP_SECRET_AZ[App Registration<br/>with Client Secret<br/>--- forced choice ---<br/>document exception]
-
-    MIBlock -->|Yes| Shared{Shared across<br/>multiple Azure<br/>resources?}
+    WLoc -->|Azure| MIBlock{Resource supports<br/>Managed Identity?}
+    MIBlock -->|Yes| Shared{Shared across<br/>multiple resources?}
     Shared -->|No| MI_SYS[System-assigned<br/>Managed Identity]
     Shared -->|Yes| MI_USER[User-assigned<br/>Managed Identity]
+    MIBlock -->|No — legacy SDK,<br/>multi-tenant app,<br/>SAML/OIDC RP| APP_SEC_AZ[App Reg + Client Secret<br/>FORCED — document exception]
 
-    Azure -->|No| ExtIdP{Has an external<br/>OIDC provider?<br/>e.g. GitHub Actions,<br/>GCP, AWS, Terraform}
-    ExtIdP -->|Yes| WIF[Workload Identity<br/>Federation]
-    ExtIdP -->|No| CertOK{Can store &amp;<br/>rotate a<br/>certificate?}
-    CertOK -->|Yes| APP_CERT[App Registration<br/>with Certificate]
-    CertOK -->|No — e.g. embedded<br/>device, SaaS callback,<br/>no cert infra| APP_SECRET[App Registration<br/>with Client Secret<br/>--- forced choice ---<br/>document exception]
+    WLoc -->|External / CI-CD<br/>with OIDC provider| WIF[Workload Identity<br/>Federation]
 
-    %% ── ON-PREM SERVICE SUB-BRANCH ──
-    Azure -- On-prem service --> OnPremDomain{Host is<br/>domain-joined?}
-    OnPremDomain -->|No — Linux host,<br/>workgroup, DMZ| LEGACY_SA_FORCED[Standard AD<br/>Service Account<br/>--- forced choice ---<br/>document exception]
-    OnPremDomain -->|Yes| OnPrem{Application<br/>supports gMSA?}
-    OnPrem -->|Yes| GMSA[gMSA<br/>Group Managed<br/>Service Account]
-    OnPrem -->|No — e.g. legacy app,<br/>hardcoded creds,<br/>third-party agent| LEGACY_SA[Standard AD<br/>Service Account<br/>--- forced choice ---<br/>plan migration to gMSA]
+    WLoc -->|External /<br/>no OIDC provider| CertOK{Can store &amp;<br/>rotate a cert?}
+    CertOK -->|Yes| APP_CERT[App Reg + Certificate]
+    CertOK -->|No — embedded device,<br/>SaaS callback,<br/>no cert infra| APP_SEC[App Reg + Client Secret<br/>FORCED — document exception]
 
-    %% ── HUMAN BRANCH ──
-    WhoWhat -->|Human| HumanType{Internal employee<br/>or external?}
+    WLoc -->|On-prem service| OPDom{Host is<br/>domain-joined?}
+    OPDom -->|Yes| GMSAOK{App supports<br/>gMSA / dMSA?}
+    GMSAOK -->|Yes| GMSA[gMSA / dMSA]
+    GMSAOK -->|No — legacy app,<br/>hardcoded creds,<br/>third-party agent| LSA[Standard AD SA<br/>FORCED — plan gMSA migration]
+    OPDom -->|No — Linux host,<br/>workgroup, DMZ| LSA_F[Standard AD SA<br/>FORCED — document exception]
 
-    HumanType -->|External partner<br/>/ vendor| GUEST[Guest / B2B<br/>Identity]
-    HumanType -->|Customer /<br/>consumer| B2C[B2C / CIAM<br/>Identity]
+    %% ============ HUMAN ============
+    Type -->|Human| Who{Internal employee,<br/>partner, or customer?}
+    Who -->|Customer / consumer| B2C[B2C / CIAM]
+    Who -->|External partner /<br/>vendor| GUEST[Guest / B2B]
+    Who -->|Internal employee| PWless{Supports passwordless?<br/>FIDO2, WHfB,<br/>Authenticator}
 
-    HumanType -->|Internal<br/>employee| PwdlessOK{Supports<br/>passwordless?<br/>e.g. FIDO2, WHfB,<br/>Authenticator}
-    PwdlessOK -->|No — e.g. shared<br/>kiosk, factory floor,<br/>no biometric HW| CLOUD_PWD[Cloud-only<br/>User Account<br/>+ Password + MFA<br/>--- forced choice ---<br/>document exception]
-    PwdlessOK -->|Yes| OnPremNeeded{Needs access to<br/>on-prem AD<br/>resources?}
-    OnPremNeeded -->|No| CLOUD[Cloud-only<br/>User Account<br/>+ Passwordless]
-    OnPremNeeded -->|Yes| HYBRID[Hybrid /<br/>Synced User<br/>Account + PHS]
+    PWless -->|Yes| OnPremNeed{Needs on-prem<br/>AD resources?}
+    OnPremNeed -->|No| CLOUD[Cloud-only User<br/>+ Passwordless]
+    OnPremNeed -->|Yes| HYBRID[Hybrid User + PHS<br/>+ Passwordless]
+    PWless -->|No — shared kiosk,<br/>factory floor,<br/>no biometric HW| CLOUD_PWD[Cloud-only User<br/>+ Password + MFA<br/>FORCED — document exception]
 
     CLOUD --> Priv{Holds privileged<br/>roles?}
     HYBRID --> Priv
     CLOUD_PWD --> Priv
+    Priv -->|Yes — overlay| PRIV[Dedicated Admin Account<br/>+ PIM + PAW<br/>+ Phishing-resistant MFA]
+    Priv -->|No| Std([Use as-is])
 
-    Priv -->|Yes| PRIV_ACC[Dedicated Admin<br/>Account<br/>+ PIM + PAW<br/>+ Phishing-resistant MFA]
-
-    %% ── DEVICE BRANCH ──
-    WhoWhat -->|Device| DevOwner{Corporate-owned<br/>or personal BYOD?}
-
-    DevOwner -->|BYOD / Personal| REGISTERED[Entra Registered<br/>Device<br/>--- Weakest trust ---]
-
-    DevOwner -->|Corporate| DevOnPrem{Needs on-prem AD<br/>computer account?}
-    DevOnPrem -->|No| ENTRA_JOIN[Entra Joined<br/>Device]
-    DevOnPrem -->|Yes| DevCanMigrate{Can remove<br/>GPO / Kerberos<br/>dependency?}
-    DevCanMigrate -->|Yes — plan it| ENTRA_JOIN
-    DevCanMigrate -->|No — e.g. legacy LOB<br/>app, NLA/RDP to<br/>on-prem, printer GPO| HYBRID_JOIN[Hybrid Entra<br/>Joined Device<br/>--- forced choice ---<br/>document exception]
+    %% ============ DEVICE ============
+    Type -->|Device| DOwn{Corporate-owned<br/>or BYOD?}
+    DOwn -->|BYOD / Personal| REG[Entra Registered Device<br/>WEAKEST trust]
+    DOwn -->|Corporate| DOnPrem{Needs on-prem AD<br/>computer account?}
+    DOnPrem -->|No| EJ[Entra Joined Device]
+    DOnPrem -->|Yes| Migrate{Can remove<br/>GPO / Kerberos<br/>dependency?}
+    Migrate -->|Yes — plan it| EJ
+    Migrate -->|No — legacy LOB,<br/>NLA/RDP,<br/>printer GPO| HJ[Hybrid Entra Joined Device<br/>FORCED — document exception]
 
     %% ── STYLES ──
     classDef best fill:#1a7a1a,stroke:#0d4d0d,color:#fff
@@ -97,12 +91,11 @@ flowchart TD
     classDef neutral fill:#336699,stroke:#1a3d5c,color:#fff
 
     class MI_SYS,MI_USER best
-    class WIF,CLOUD good
-    class GMSA,APP_CERT,ENTRA_JOIN,PRIV_ACC good
+    class WIF,CLOUD,GMSA,APP_CERT,EJ,PRIV good
     class HYBRID,GUEST,B2C ok
-    class APP_SECRET,LEGACY_SA,LEGACY_SA_FORCED,APP_SECRET_AZ avoid
-    class HYBRID_JOIN,REGISTERED,CLOUD_PWD transition
-    class Start neutral
+    class APP_SEC,APP_SEC_AZ,LSA,LSA_F avoid
+    class HJ,REG,CLOUD_PWD transition
+    class Start,Std neutral
 ```
 
 ---
@@ -138,7 +131,7 @@ This is the single most exploited credential type in cloud breaches. If a client
 | **Logon restriction** | Restrict "Log on as a service" / "Log on as a batch job" to only the specific servers that need it |
 | **Tiering** | Never use a Tier 0 service account for Tier 1/2 workloads. Enforce silo/policy assignment |
 | **Monitoring** | MDI alerts for service account anomalies. Audit logon events (4624/4625) and privilege use |
-| **gMSA migration plan** | Document why gMSA is not possible today (app limitation, vendor dependency, non-domain host) and the conditions for migration |
+| **gMSA / dMSA migration plan** | Document why neither gMSA nor dMSA is possible today (app limitation, vendor dependency, non-domain host, sub-Server-2025 DCs) and the conditions for migration |
 
 ### Cloud-Only User with Password + MFA (Rank 11)
 
@@ -549,7 +542,31 @@ Same cloud MFA and passwordless methods as cloud-only accounts are available onc
 
 ---
 
-### 5.3 Standalone Managed Service Accounts (sMSA)
+### 5.3 Delegated Managed Service Accounts (dMSA)
+
+**Description.** New AD account type introduced in Windows Server 2025, designed specifically as the migration target for legacy standard service accounts. A dMSA can take over the SPN and Kerberos identity of a standard service account transparently — clients keep working unchanged, but the original account's password is invalidated and the dMSA's credentials are now machine-bound and managed by AD.
+
+**Authentication mechanisms.** Kerberos-only, tied to the host machine account(s) authorised to retrieve the credential. Credentials cannot be extracted via lsass dumping or Mimikatz-style techniques because the working credential is machine-bound. Password is auto-rotated by AD.
+
+**Resource access.** Same as the legacy account it replaces — SPN, group memberships, and ACLs are preserved through migration. The dMSA inherits the legacy account's access surface; tighten permissions during the migration window where possible.
+
+**Validation & protection.** Requires Windows Server 2025 Domain Controllers and the Server 2025 domain functional level. Migration uses `Start-ADServiceAccountMigration`, which links the legacy SA to the dMSA and invalidates the legacy password. Audit Directory Service Changes (event 5136) for unauthorised migration attempts and SAM property updates on service accounts. Use dMSA in preference to a standard service account whenever you need to retire a legacy SA but the application cannot be re-architected to consume gMSA directly.
+
+**Pros.**
+- Drop-in replacement for legacy standard service accounts — applications that hardcode credentials require no code change
+- Credentials machine-bound — defeats credential theft via lsass / DCSync replay
+- Auto-rotated like gMSA; no human ever sees or handles the password
+- `Start-ADServiceAccountMigration` provides a controlled cut-over path with rollback
+
+**Cons.**
+- Requires Windows Server 2025 DCs and Server 2025 domain functional level — many environments not there yet
+- New feature; ecosystem support and operational tooling still maturing
+- Migration is one-way once the legacy password is invalidated — test carefully
+- Not portable to non-Windows hosts
+
+---
+
+### 5.4 Standalone Managed Service Accounts (sMSA)
 
 **Description.** Similar to gMSA but restricted to a single server. Password is auto-managed by AD. Introduced in Windows Server 2008 R2. Largely superseded by gMSA — use gMSA for all new deployments.
 

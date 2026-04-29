@@ -33,60 +33,54 @@ Rangeret efter sikkerhedsniveau, driftsmæssig byrde og moderne tilpasning — f
 
 ```mermaid
 flowchart TD
-    Start([Hvad har brug for en identitet?]) --> WhoWhat{Menneske, workload<br/>eller enhed?}
+    Start([Hvad har brug for en identitet?]) --> Type{Menneske, workload<br/>eller enhed?}
 
-    %% ── WORKLOAD-GREN ──
-    WhoWhat -->|Workload / Tjeneste| Azure{Kører i Azure?}
+    %% ============ WORKLOAD ============
+    Type -->|Workload / Tjeneste| WLoc{Hvor kører<br/>den?}
 
-    Azure -->|Ja| MIBlock{Ressource understøtter<br/>Managed Identity?}
-
-    MIBlock -->|Nej — f.eks. ældre<br/>SDK, multi-tenant<br/>app, SAML/OIDC RP| APP_SECRET_AZ[App Registration<br/>med Client Secret<br/>--- tvungent valg ---<br/>dokumentér undtagelse]
-
-    MIBlock -->|Ja| Shared{Deles på tværs af<br/>flere Azure-<br/>ressourcer?}
+    WLoc -->|Azure| MIBlock{Understøtter ressourcen<br/>Managed Identity?}
+    MIBlock -->|Ja| Shared{Deles på tværs af<br/>flere ressourcer?}
     Shared -->|Nej| MI_SYS[Systemtildelt<br/>Managed Identity]
     Shared -->|Ja| MI_USER[Brugertildelt<br/>Managed Identity]
+    MIBlock -->|Nej — legacy SDK,<br/>multi-tenant app,<br/>SAML/OIDC RP| APP_SEC_AZ[App Reg + Client Secret<br/>TVUNGET — dokumentér undtagelse]
 
-    Azure -->|Nej| ExtIdP{Har en ekstern<br/>OIDC-udbyder?<br/>f.eks. GitHub Actions,<br/>GCP, AWS, Terraform}
-    ExtIdP -->|Ja| WIF[Workload Identity<br/>Federation]
-    ExtIdP -->|Nej| CertOK{Kan gemme og<br/>rotere et<br/>certifikat?}
-    CertOK -->|Ja| APP_CERT[App Registration<br/>med certifikat]
-    CertOK -->|Nej — f.eks. indlejret<br/>enhed, SaaS-callback,<br/>ingen cert-infra| APP_SECRET[App Registration<br/>med Client Secret<br/>--- tvungent valg ---<br/>dokumentér undtagelse]
+    WLoc -->|Ekstern / CI-CD<br/>med OIDC-udbyder| WIF[Workload Identity<br/>Federation]
 
-    %% ── ON-PREM TJENESTE-UNDERGREN ──
-    Azure -- On-prem tjeneste --> OnPremDomain{Vært er<br/>domænetilsluttet?}
-    OnPremDomain -->|Nej — Linux-vært,<br/>arbejdsgruppe, DMZ| LEGACY_SA_FORCED[Standard AD<br/>tjenestekonto<br/>--- tvungent valg ---<br/>dokumentér undtagelse]
-    OnPremDomain -->|Ja| OnPrem{Applikation<br/>understøtter gMSA?}
-    OnPrem -->|Ja| GMSA[gMSA<br/>Group Managed<br/>Service Account]
-    OnPrem -->|Nej — f.eks. ældre app,<br/>hardkodede legitimations-<br/>oplysninger, tredjepartsagent| LEGACY_SA[Standard AD<br/>tjenestekonto<br/>--- tvungent valg ---<br/>planlæg migrering til gMSA]
+    WLoc -->|Ekstern /<br/>uden OIDC-udbyder| CertOK{Kan opbevare og<br/>rotere et certifikat?}
+    CertOK -->|Ja| APP_CERT[App Reg + Certifikat]
+    CertOK -->|Nej — embedded enhed,<br/>SaaS-callback,<br/>ingen cert-infra| APP_SEC[App Reg + Client Secret<br/>TVUNGET — dokumentér undtagelse]
 
-    %% ── MENNESKE-GREN ──
-    WhoWhat -->|Menneske| HumanType{Intern medarbejder<br/>eller ekstern?}
+    WLoc -->|On-prem tjeneste| OPDom{Er hosten<br/>domænetilsluttet?}
+    OPDom -->|Ja| GMSAOK{App understøtter<br/>gMSA / dMSA?}
+    GMSAOK -->|Ja| GMSA[gMSA / dMSA]
+    GMSAOK -->|Nej — legacy-app,<br/>hardkodede creds,<br/>tredjeparts-agent| LSA[Standard AD SA<br/>TVUNGET — planlæg gMSA-migrering]
+    OPDom -->|Nej — Linux-host,<br/>workgroup, DMZ| LSA_F[Standard AD SA<br/>TVUNGET — dokumentér undtagelse]
 
-    HumanType -->|Ekstern partner<br/>/ leverandør| GUEST[Gæst / B2B<br/>identitet]
-    HumanType -->|Kunde /<br/>forbruger| B2C[B2C / CIAM<br/>identitet]
+    %% ============ MENNESKE ============
+    Type -->|Menneske| Who{Intern medarbejder,<br/>partner eller kunde?}
+    Who -->|Kunde / forbruger| B2C[B2C / CIAM]
+    Who -->|Ekstern partner /<br/>leverandør| GUEST[Guest / B2B]
+    Who -->|Intern medarbejder| PWless{Understøtter passwordless?<br/>FIDO2, WHfB,<br/>Authenticator}
 
-    HumanType -->|Intern<br/>medarbejder| PwdlessOK{Understøtter<br/>adgangskodeløs?<br/>f.eks. FIDO2, WHfB,<br/>Authenticator}
-    PwdlessOK -->|Nej — f.eks. delt<br/>kiosk, fabriksgulv,<br/>ingen biometrisk HW| CLOUD_PWD[Cloud<br/>brugerkonto<br/>+ adgangskode + MFA<br/>--- tvungent valg ---<br/>dokumentér undtagelse]
-    PwdlessOK -->|Ja| OnPremNeeded{Har brug for adgang<br/>til on-prem AD-<br/>ressourcer?}
-    OnPremNeeded -->|Nej| CLOUD[Cloud<br/>brugerkonto<br/>+ adgangskodeløs]
-    OnPremNeeded -->|Ja| HYBRID[Hybrid /<br/>synkroniseret<br/>brugerkonto + PHS]
+    PWless -->|Ja| OnPremNeed{Behøver on-prem<br/>AD-ressourcer?}
+    OnPremNeed -->|Nej| CLOUD[Cloud-only bruger<br/>+ Passwordless]
+    OnPremNeed -->|Ja| HYBRID[Hybridbruger + PHS<br/>+ Passwordless]
+    PWless -->|Nej — delt kiosk,<br/>fabriksgulv,<br/>ingen biometrisk HW| CLOUD_PWD[Cloud-only bruger<br/>+ adgangskode + MFA<br/>TVUNGET — dokumentér undtagelse]
 
     CLOUD --> Priv{Har privilegerede<br/>roller?}
     HYBRID --> Priv
     CLOUD_PWD --> Priv
+    Priv -->|Ja — overlay| PRIV[Dedikeret admin-konto<br/>+ PIM + PAW<br/>+ phishing-resistent MFA]
+    Priv -->|Nej| Std([Brug som den er])
 
-    Priv -->|Ja| PRIV_ACC[Dedikeret<br/>adminkonto<br/>+ PIM + PAW<br/>+ phishing-resistent MFA]
-
-    %% ── ENHEDS-GREN ──
-    WhoWhat -->|Enhed| DevOwner{Virksomhedsejet<br/>eller personlig BYOD?}
-
-    DevOwner -->|BYOD / Personlig| REGISTERED[Entra Registered<br/>enhed<br/>--- svageste tillid ---]
-
-    DevOwner -->|Virksomhedsejet| DevOnPrem{Har brug for on-prem<br/>AD-computerkonto?}
-    DevOnPrem -->|Nej| ENTRA_JOIN[Entra Joined<br/>enhed]
-    DevOnPrem -->|Ja| DevCanMigrate{Kan fjerne<br/>GPO / Kerberos-<br/>afhængighed?}
-    DevCanMigrate -->|Ja — planlæg det| ENTRA_JOIN
-    DevCanMigrate -->|Nej — f.eks. ældre LOB-<br/>app, NLA/RDP til<br/>on-prem, printer-GPO| HYBRID_JOIN[Hybrid Entra<br/>Joined enhed<br/>--- tvungent valg ---<br/>dokumentér undtagelse]
+    %% ============ ENHED ============
+    Type -->|Enhed| DOwn{Virksomhedsejet<br/>eller BYOD?}
+    DOwn -->|BYOD / Personlig| REG[Entra Registered enhed<br/>SVAGESTE tillid]
+    DOwn -->|Virksomhed| DOnPrem{Behøver on-prem AD-<br/>computerkonto?}
+    DOnPrem -->|Nej| EJ[Entra Joined enhed]
+    DOnPrem -->|Ja| Migrate{Kan GPO-/<br/>Kerberos-afhængighed<br/>fjernes?}
+    Migrate -->|Ja — planlæg det| EJ
+    Migrate -->|Nej — legacy LOB,<br/>NLA/RDP,<br/>printer-GPO| HJ[Hybrid Entra Joined enhed<br/>TVUNGET — dokumentér undtagelse]
 
     %% ── STILARTER ──
     classDef best fill:#1a7a1a,stroke:#0d4d0d,color:#fff
@@ -97,12 +91,11 @@ flowchart TD
     classDef neutral fill:#336699,stroke:#1a3d5c,color:#fff
 
     class MI_SYS,MI_USER best
-    class WIF,CLOUD good
-    class GMSA,APP_CERT,ENTRA_JOIN,PRIV_ACC good
+    class WIF,CLOUD,GMSA,APP_CERT,EJ,PRIV good
     class HYBRID,GUEST,B2C ok
-    class APP_SECRET,LEGACY_SA,LEGACY_SA_FORCED,APP_SECRET_AZ avoid
-    class HYBRID_JOIN,REGISTERED,CLOUD_PWD transition
-    class Start neutral
+    class APP_SEC,APP_SEC_AZ,LSA,LSA_F avoid
+    class HJ,REG,CLOUD_PWD transition
+    class Start,Std neutral
 ```
 
 ---
@@ -138,7 +131,7 @@ Dette er den mest udnyttede legitimationstype ved cloud-brud. Hvis en client sec
 | **Logon-begrænsning** | Begræns "Log on as a service" / "Log on as a batch job" til kun de specifikke servere, der har behov |
 | **Lagdeling** | Brug aldrig en Tier 0-tjenestekonto til Tier 1/2-workloads. Håndhæv silo-/politiktildeling |
 | **Overvågning** | MDI-alarmer for afvigende tjenestekontoaktivitet. Auditér logon-hændelser (4624/4625) og privilegiebrug |
-| **gMSA-migreringsplan** | Dokumentér, hvorfor gMSA ikke er mulig i dag (applikationsbegrænsning, leverandørafhængighed, ikke-domæne-vært) og betingelserne for migrering |
+| **gMSA / dMSA-migreringsplan** | Dokumentér, hvorfor hverken gMSA eller dMSA er mulig i dag (applikationsbegrænsning, leverandørafhængighed, ikke-domæne-vært, DC'er ældre end Server 2025) og betingelserne for migrering |
 
 ### Cloudbruger med adgangskode + MFA (rang 11)
 
@@ -549,7 +542,31 @@ Samme cloud MFA- og adgangskodeløse metoder som cloud-konti er tilgængelige, n
 
 ---
 
-### 5.3 Standalone Managed Service Accounts (sMSA)
+### 5.3 Delegated Managed Service Accounts (dMSA)
+
+**Beskrivelse.** Ny AD-kontotype introduceret i Windows Server 2025, designet specifikt som migreringsmål for ældre standard-tjenestekonti. En dMSA kan transparent overtage SPN'et og Kerberos-identiteten fra en standard-tjenestekonto — klienter fortsætter uændret, men den oprindelige kontos adgangskode invalideres, og dMSA'ens credentials er nu maskinbundne og administreret af AD.
+
+**Autentificeringsmekanismer.** Kun Kerberos, bundet til de hostmaskinekonti, der er autoriseret til at hente credentialet. Credentials kan ikke ekstraheres via lsass-dumping eller Mimikatz-lignende teknikker, fordi det aktive credential er maskinbundet. Adgangskoden auto-roteres af AD.
+
+**Ressourceadgang.** Samme som den ældre konto, der erstattes — SPN, gruppemedlemskaber og ACL'er bevares gennem migreringen. dMSA arver den ældre kontos adgangsflade; stram rettighederne under migreringsvinduet, hvor det er muligt.
+
+**Validering og beskyttelse.** Kræver Windows Server 2025-domænecontrollere og Server 2025-domænefunktionsniveau. Migreringen anvender `Start-ADServiceAccountMigration`, som knytter den ældre SA til dMSA'en og invaliderer den ældre adgangskode. Audit Directory Service Changes (event 5136) for uautoriserede migreringsforsøg og SAM-egenskabsopdateringer på tjenestekonti. Brug dMSA frem for en standard-tjenestekonto, når du skal udfase en ældre SA, men applikationen ikke kan re-arkitekteres til at bruge gMSA direkte.
+
+**Fordele.**
+- Drop-in-erstatning for ældre standard-tjenestekonti — applikationer med hårdkodede credentials kræver ingen kodeændring
+- Maskinbundne credentials — modvirker credential-tyveri via lsass / DCSync-replay
+- Auto-roteret som gMSA; intet menneske ser eller håndterer adgangskoden
+- `Start-ADServiceAccountMigration` giver en kontrolleret cut-over-sti med rollback
+
+**Ulemper.**
+- Kræver Windows Server 2025 DC'er og Server 2025-domænefunktionsniveau — mange miljøer er ikke der endnu
+- Ny funktion; økosystem-understøttelse og driftsværktøj er stadig under modning
+- Migreringen er envejs, når den ældre adgangskode er invalideret — test omhyggeligt
+- Ikke portabel til ikke-Windows-hosts
+
+---
+
+### 5.4 Standalone Managed Service Accounts (sMSA)
 
 **Beskrivelse.** Lignende gMSA, men begrænset til en enkelt server. Adgangskode auto-administreres af AD. Introduceret i Windows Server 2008 R2. Stort set afløst af gMSA — brug gMSA til alle nye implementeringer.
 
